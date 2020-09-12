@@ -2,16 +2,13 @@ FROM rust AS build
 
 WORKDIR /root
 
-RUN git clone https://github.com/brandur/redis-cell.git
-RUN cd redis-cell && \
-    cargo build --release
+RUN git clone https://github.com/brandur/redis-cell.git \
+    && cd redis-cell \
+    && cargo build --release
 
-FROM redis
+FROM bitnami/redis:6.0.8-debian-10-r0
 
-COPY --from=build /root/redis-cell/target/release/libredis_cell.so /root/
+COPY --from=build /root/redis-cell/target/release/libredis_cell.so /opt/bitnami/redis/
 
-RUN stat /root/libredis_cell.so
-
-ENTRYPOINT ["redis-server", "--loadmodule", "/root/libredis_cell.so"]
-
-EXPOSE 6379
+RUN stat /opt/bitnami/redis/libredis_cell.so \
+    && echo 'loadmodule /opt/bitnami/redis/libredis_cell.so' >> /opt/bitnami/redis/etc/redis.conf
